@@ -1,28 +1,39 @@
 #!/bin/bash
-# Lien direct vers votre propre dépôt GitHub
 GITHUB_RAW="https://raw.githubusercontent.com/tchindaazice/script-hysteria-and-any-other/main"
 
-echo "Téléchargement de vos fichiers d'installation d'origine..."
+echo "--- Nettoyage et arrêt des services conflictuels ---"
+systemctl stop nginx stunnel5 badvpn@7100 badvpn@7200 badvpn@7300 xray ssh 2>/dev/null
 
-# 1. Télécharger vos anciens protocoles disparus (ZIVPN et UDP)
-wget -q -O /usr/local/bin/setup_zivpn $GITHUB_RAW/core/setup_zivpn.sh
-wget -q -O /usr/local/bin/setup_udp $GITHUB_RAW/core/setup_udp.sh
+echo "--- Téléchargement des protocoles d'installation ---"
+wget -q -O /usr/bin/setup_zivpn $GITHUB_RAW/core/setup_zivpn.sh
+wget -q -O /usr/bin/setup_udp $GITHUB_RAW/core/setup_udp.sh
+wget -q -O /usr/bin/setup_xray $GITHUB_RAW/core/xray.sh
+wget -q -O /usr/bin/setup_ssh $GITHUB_RAW/core/sshws.sh
 
-# 2. Télécharger les protocoles de base depuis VOTRE dépôt (Xray, SSH, etc.)
-wget -q -O /usr/local/bin/setup_xray $GITHUB_RAW/core/xray.sh
-wget -q -O /usr/local/bin/setup_ssh $GITHUB_RAW/core/sshws.sh
+chmod +x /usr/bin/setup_*
 
-# 3. Télécharger votre ancien Menu qui contient toutes les options
-wget -q -O /usr/local/bin/menu $GITHUB_RAW/menu/menu.sh
+echo "--- Téléchargement de l'écosystème complet du Menu ---"
+# Téléchargement du binaire principal
+wget -q -O /usr/bin/menu $GITHUB_RAW/menu/menu.sh
+chmod +x /usr/bin/menu
 
-# Rendre tous les fichiers exécutables
-chmod +x /usr/local/bin/setup_zivpn /usr/local/bin/setup_udp /usr/local/bin/setup_xray /usr/local/bin/setup_ssh /usr/local/bin/menu
+# Téléchargement de tous les sous-menus nécessaires à l'exécutable
+FILES=("zivpn.sh" "vmess.sh" "vless.sh" "update.sh" "trojan.sh" "status.sh" "ssh.sh" "socks.sh" "port.sh" "netguard.sh" "log.sh" "iptools.sh" "expiry.sh" "domain.sh" "dns.sh" "tgbot.sh")
 
-echo "Exécution des installations..."
-# Lancement des scripts pour configurer les protocoles sur le serveur
-/usr/local/bin/setup_xray
-/usr/local/bin/setup_ssh
-/usr/local/bin/setup_zivpn
-/usr/local/bin/setup_udp
+for file in "${FILES[@]}"; do
+    # Retirer l'extension .sh pour le nom de la commande (ex: vless.sh devient vless)
+    cmd_name=$(echo "$file" | sed 's/\.sh//')
+    wget -q -O "/usr/bin/$cmd_name" "$GITHUB_RAW/menu/$file"
+    chmod +x "/usr/bin/$cmd_name"
+done
 
-echo "Installation terminée avec succès depuis votre dépôt ! Tapez 'menu' pour afficher l'interface."
+echo "--- Exécution des configurations ---"
+/usr/bin/setup_xray
+/usr/bin/setup_ssh
+/usr/bin/setup_zivpn
+/usr/bin/setup_udp
+
+# Rafraîchir les chemins du terminal
+hash -r
+
+echo "Installation V2 terminée ! Tapez 'menu' pour lancer."
