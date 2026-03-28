@@ -2,6 +2,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
 import os
+from modules import system_core, ssh_core
 
 CONFIG_FILE = '/etc/nexus_bot/config.json'
 
@@ -123,6 +124,29 @@ def process_ssh_days(message, user, password):
         bot.send_message(message.chat.id, f"❌ Échec de la création :
 <code>{res.stderr}</code>", parse_mode="HTML", reply_markup=main_menu_keyboard())
 
+
+
+# --- LOGIQUE SYSTÈME ---
+@bot.callback_query_handler(func=lambda call: call.data == "menu_status")
+def handle_status(call):
+    if not is_admin(call.from_user.id): return
+    status_text = system_core.get_vps_status()
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(status_text, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "menu_log")
+def handle_clean_logs(call):
+    if not is_admin(call.from_user.id): return
+    result = system_core.clean_system_logs()
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "list_ssh")
+def handle_list_ssh(call):
+    if not is_admin(call.from_user.id): return
+    result = ssh_core.list_ssh_accounts()
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
 
 if __name__ == "__main__":
     bot.infinity_polling()
