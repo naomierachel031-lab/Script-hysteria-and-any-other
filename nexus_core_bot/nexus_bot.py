@@ -245,5 +245,45 @@ def process_xray_days(message, user, protocol):
     success, res = xray_core.create_xray_account(protocol, user, days)
     bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
 
+
+# --- LOGIQUE DE CRÉATION ZIVPN (STATE MACHINE) ---
+@bot.callback_query_handler(func=lambda call: call.data == "add_zivpn")
+def add_zivpn_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("⚙️ Module ZIVPN activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/3</b>
+Entrez le nom d'utilisateur ZIVPN :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, process_zivpn_user)
+
+def process_zivpn_user(message):
+    user = message.text
+    msg = bot.send_message(message.chat.id, "🔑 <b>Étape 2/3</b>
+Entrez le mot de passe :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, process_zivpn_pass, user)
+
+def process_zivpn_pass(message, user):
+    password = message.text
+    msg = bot.send_message(message.chat.id, "⏳ <b>Étape 3/3</b>
+Entrez la durée (en jours) :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, process_zivpn_days, user, password)
+
+def process_zivpn_days(message, user, password):
+    days = message.text
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+
+    bot.send_message(message.chat.id, f"⚙️ Création du compte <b>{user}</b> (ZIVPN)...", parse_mode="HTML")
+    success, res = zivpn_core.create_zivpn_account(user, password, days)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# --- LISTE ZIVPN ---
+@bot.callback_query_handler(func=lambda call: call.data == "list_zivpn")
+def handle_list_zivpn(call):
+    if not is_admin(call.from_user.id): return
+    result = zivpn_core.list_zivpn_accounts()
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
 if __name__ == "__main__":
     bot.infinity_polling()
