@@ -1,57 +1,29 @@
 #!/bin/bash
+clear
+echo -e "\e[36m====================================================\e[0m"
+echo -e "\e[36m    DÉMARRAGE DE L'INSTALLATION: NEXUS TUNNEL PRO   \e[0m"
+echo -e "\e[36m====================================================\e[0m"
 
-echo "===================================================="
-echo "    DÉMARRAGE DE L'INSTALLATION PERSONNALISÉE       "
-echo "===================================================="
+# 1. Préparation des outils vitaux
+apt-get update -y >/dev/null 2>&1
+apt-get install -y wget curl >/dev/null 2>&1
 
-# 1. Correction réseau (Le correctif absolu contre les écrans noirs)
-echo "[+] Désactivation stricte de l'IPv6 et forçage IPv4 au niveau du noyau..."
+# 2. Correction réseau (Forçage IPv4 pour la stabilité)
+echo "[+] Optimisation des routes réseau..."
 echo "precedence ::ffff:0:0/96  100" >> /etc/gai.conf
-echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
-echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
-sysctl -p
+sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1 >/dev/null 2>&1
 
-# 2. Mise en place de l'attaque Man-in-the-Middle locale
-echo "[+] Injection des intercepteurs réseau..."
-cat << 'EOF' > /usr/local/bin/wget
-#!/bin/bash
-NEW_ARGS=()
-for arg in "$@"; do
-    if [[ "$arg" == *"dotywrt/doty"* ]]; then
-        arg="${arg//dotywrt\/doty/tchindaazice\/script-hysteria-and-any-other}"
-    fi
-    NEW_ARGS+=("$arg")
-done
-/usr/bin/wget "${NEW_ARGS[@]}"
-EOF
-chmod +x /usr/local/bin/wget
+# 3. Téléchargement du Lanceur Principal depuis TON laboratoire
+echo "[+] Connexion au dépôt autonome Nexus..."
+wget -qO /root/nexus.sh "https://raw.githubusercontent.com/naomierachel031-lab/Script-hysteria-and-any-other/main/nexus.sh"
 
-cat << 'EOF' > /usr/local/bin/curl
-#!/bin/bash
-NEW_ARGS=()
-for arg in "$@"; do
-    if [[ "$arg" == *"dotywrt/doty"* ]]; then
-        arg="${arg//dotywrt\/doty/tchindaazice\/script-hysteria-and-any-other}"
-    fi
-    NEW_ARGS+=("$arg")
-done
-/usr/bin/curl "${NEW_ARGS[@]}"
-EOF
-chmod +x /usr/local/bin/curl
-
-export PATH="/usr/local/bin:$PATH"
-
-# 3. Lancement du binaire principal 
-echo "[+] Téléchargement et exécution du moteur d'installation..."
-/usr/bin/wget -4 -qO /root/doty.sh https://raw.githubusercontent.com/naomierachel031-lab/Script-hysteria-and-any-other/main/doty.sh
-chmod +x /root/doty.sh
-/root/doty.sh
-
-# 4. Nettoyage de l'environnement
-echo "[+] Suppression des intercepteurs réseau..."
-rm -f /usr/local/bin/wget /usr/local/bin/curl
-hash -r
-
-echo "===================================================="
-echo "   INSTALLATION ET RÉPARATION TERMINÉES AVEC SUCCÈS "
-echo "===================================================="
+# 4. Exécution Sécurisée
+if [ -f /root/nexus.sh ]; then
+    echo "[+] Fichier noyau intercepté avec succès. Lancement..."
+    chmod +x /root/nexus.sh
+    bash /root/nexus.sh
+else
+    echo "[-] ERREUR FATALE: Impossible d'atteindre le dépôt GitHub."
+    exit 1
+fi
