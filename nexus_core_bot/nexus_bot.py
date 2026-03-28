@@ -2,7 +2,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
 import os
-from modules import system_core, ssh_core
+from modules import system_core, ssh_core, admin_core
 
 CONFIG_FILE = '/etc/nexus_bot/config.json'
 
@@ -147,6 +147,67 @@ def handle_list_ssh(call):
     result = ssh_core.list_ssh_accounts()
     markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
     bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
+
+# --- LOGIQUE DE GESTION DES ADMINISTRATEURS ---
+@bot.callback_query_handler(func=lambda call: call.data == "menu_admins")
+def handle_menu_admins(call):
+    if not is_admin(call.from_user.id): return
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("➕ Proposer un Admin", callback_data="req_add_admin"),
+        InlineKeyboardButton("❌ Révoquer un Admin", callback_data="req_del_admin"),
+        InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home")
+    )
+    msg = admin_core.list_admins()
+    bot.edit_message_text(msg, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "req_add_admin")
+def req_add_admin(call):
+    if not is_admin(call.from_user.id): return
+    msg = bot.send_message(call.message.chat.id, "👤 Entrez l'ID Telegram du nouvel administrateur :")
+    bot.register_next_step_handler(msg, process_add_admin_request, call.from_user.id)
+
+def process_add_admin_request(message, requester_id):
+    target_id = message.text
+    if not target_id.isdigit():
+        bot.send_message(message.chat.id, "❌ L'ID doit être un nombre.")
+        return
+        
+    if admin_core.is_super_admin(requester_id):
+        # Si c'est le Super Admin qui demande, on ajoute direct
+        success, res = admin_core.approve_new_admin(target_id)
+        bot.send_message(message.chat.id, f"✅ Action Super Admin: {res}" if success else f"❌ {res}")
+    else:
+        # Si c'est un simple Admin, on envoie la demande au Super Admin
+        bot.send_message(message.chat.id, "⏳ <b>Demande envoyée au Super Admin pour approbation.</b>", parse_mode="HTML")
+        
+        super_admin_id = admin_core.get_config().get('super_admin')
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("✅ Approuver", callback_data=f"approve_{target_id}_{requester_id}"),
+            InlineKeyboardButton("❌ Refuser", callback_data=f"reject_{target_id}_{requester_id}")
+        )
+        bot.send_message(super_admin_id, f"⚠️ <b>NOUVELLE REQUÊTE D'ADMINISTRATION</b>
+
+L'admin <code>{requester_id}</code> souhaite ajouter <code>{target_id}</code> comme administrateur.", parse_mode="HTML", reply_markup=markup)
+
+# Gestion de la réponse du Super Admin
+@bot.callback_query_handler(func=lambda call: call.data.startswith("approve_") or call.data.startswith("reject_"))
+def handle_approval(call):
+    if not admin_core.is_super_admin(call.from_user.id): return
+    
+    action, target_id, requester_id = call.data.split("_")
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None) # Efface les boutons
+    
+    if action == "approve":
+        success, res = admin_core.approve_new_admin(target_id)
+        bot.send_message(call.message.chat.id, f"✅ Vous avez approuvé <code>{target_id}</code>.", parse_mode="HTML")
+        bot.send_message(requester_id, f"🎉 <b>Félicitations !</b> Le Super Admin a approuvé votre demande pour <code>{target_id}</code>.", parse_mode="HTML")
+    else:
+        bot.send_message(call.message.chat.id, f"❌ Vous avez refusé <code>{target_id}</code>.", parse_mode="HTML")
+        bot.send_message(requester_id, f"🚫 Le Super Admin a refusé l'ajout de <code>{target_id}</code>.", parse_mode="HTML")
+
 
 if __name__ == "__main__":
     bot.infinity_polling()
