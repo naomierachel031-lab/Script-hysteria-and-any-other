@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/nexus_bot_engine
-ExecStart=/usr/bin/python3 /root/nexus_bot_engine/nexus_bot.py
+WorkingDirectory=/etc/nexus_bot
+ExecStart=/usr/bin/python3 /etc/nexus_bot/nexus_bot.py
 Restart=always
 RestartSec=3
 
