@@ -1,71 +1,48 @@
 #!/bin/bash
-# Fichier : menu/tgbot.sh
-# Rôle : Interface Terminal pour installer et gérer le Bot Telegram
-
 clear
-echo -e "\e[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-echo -e "\e[32m      🤖 GESTIONNAIRE BOT TELEGRAM        \e[0m"
-echo -e "\e[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-echo -e "\e[33mCe module relie votre serveur VPN à Telegram.\e[0m"
-echo -e "\e[33mIl tournera 24h/24 et 7j/7 en arrière-plan.\e[0m"
-echo ""
+LN='\e[36m'
+NC='\e[0m'
+BG='\e[44m'
+RD='\e[31m'
+GR='\e[32m'
 
-# Demander les informations à l'utilisateur directement dans le terminal
-read -p "👉 Entrez le Token de votre Bot : " BOT_TOKEN
-read -p "👉 Entrez votre ID Telegram (Admin) : " ADMIN_ID
+echo -e "${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+echo -e "${LN}┃${NC} ${BG}           INSTALLATION DE NEXUS BOT            ${NC} ${LN}┃${NC}"
+echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+echo -e ""
+echo -e " Ce module va relier votre serveur à Telegram."
+echo -e " Vous deviendrez le SUPER ADMIN du système."
+echo -e ""
 
-echo ""
-echo -e "\e[34m[1/4] Installation des prérequis Python...\e[0m"
-apt-get update -y &>/dev/null
-apt-get install python3 python3-pip unzip zip qrencode -y &>/dev/null
-pip3 install pyTelegramBotAPI psutil qrcode pillow &>/dev/null
+read -p " ➔ Entrez le TOKEN du Bot (ex: 1234:ABCDef...) : " bot_token
+if [[ -z "$bot_token" ]]; then
+    echo -e "${RD}Erreur: Le Token est obligatoire.${NC}"
+    sleep 2
+    exit
+fi
 
-echo -e "\e[34m[2/4] Création de l'architecture du Bot...\e[0m"
-mkdir -p /root/doty_bot/core
-mkdir -p /root/doty_bot/utils
-mkdir -p /root/doty_bot/tg_interface
+read -p " ➔ Entrez votre ID Telegram (ex: 123456789) : " admin_id
+if [[ -z "$admin_id" ]]; then
+    echo -e "${RD}Erreur: L'ID Admin est obligatoire.${NC}"
+    sleep 2
+    exit
+fi
 
-# Création du fichier de configuration sécurisé
-cat <<EOF > /root/doty_bot/config.json
+echo -e "\n${GR}[+] Configuration du système en cours...${NC}"
+mkdir -p /etc/nexus_bot
+cat <<JSON > /etc/nexus_bot/config.json
 {
-  "BOT_TOKEN": "$BOT_TOKEN",
-  "ADMINS": [$ADMIN_ID],
-  "BUG_HOST": "bug.cdn.com"
+  "bot_token": "$bot_token",
+  "super_admin": $admin_id,
+  "admins": []
 }
-EOF
+JSON
 
-echo -e "\e[34m[3/4] Téléchargement des modules depuis GitHub...\e[0m"
-# URL de ton dossier source sur GitHub
-REPO_URL="https://raw.githubusercontent.com/tchindaazice/Script-hysteria-and-any-other/main/doty_bot_source"
+echo -e "${GR}[+] Installation des dépendances Python...${NC}"
+apt-get install -y python3 python3-pip >/dev/null 2>&1
+pip3 install pyTelegramBotAPI >/dev/null 2>&1
 
-wget -q -O /root/doty_bot/main.py $REPO_URL/main.py
-wget -q -O /root/doty_bot/core/xray_handler.py $REPO_URL/core/xray_handler.py
-wget -q -O /root/doty_bot/core/ssh_handler.py $REPO_URL/core/ssh_handler.py
-wget -q -O /root/doty_bot/utils/qr_generator.py $REPO_URL/utils/qr_generator.py
-
-echo -e "\e[34m[4/4] Activation du Bot 24h/24...\e[0m"
-cat <<EOF > /etc/systemd/system/dotybot.service
-[Unit]
-Description=Nexus Telegram Bot Pro
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/python3 /root/doty_bot/main.py
-WorkingDirectory=/root/doty_bot
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable dotybot &>/dev/null
-systemctl restart dotybot
-
-echo -e "\e[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-echo -e "\e[32m✅ BOT INSTALLÉ ET CONNECTÉ AVEC SUCCÈS ! \e[0m"
-echo -e "\e[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-echo -e "📱 Ouvrez Telegram et envoyez \e[32m/start\e[0m à votre bot."
-echo ""
-read -n 1 -s -r -p "Appuyez sur une touche pour retourner au menu..."
+echo -e "${GR}[+] Base de données Super Admin verrouillée.${NC}"
+echo -e "\n Appuyez sur ENTRÉE pour retourner au menu."
+read
+menu
