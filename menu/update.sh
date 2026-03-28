@@ -1,4 +1,26 @@
 #!/bin/bash
-z="
-";YBz='ess ';yz='${LN';ACz=' [*]';Oz='ent.';MDz=' Upd';bBz='tgua';QBz=' men';Uz='expo';aDz='ss o';TDz='iles';Az='clea';aBz='s ne';DCz='d $s';FBz='0';UCz='x "$';qBz='t}.s';SDz='ss f';SBz='cks ';yDz=' Pre';DDz='/xra';oCz='fi';oBz='/${s';hz=' -e ';Yz='m'\''';fDz='ver=';nz='N}┃$';kBz='ERVE';sDz='━●${';uCz='t_in';rz='    ';rBz='h"';rCz='etc/';tBz='="/u';iDz='s $S';JCz='t ..';XDz=' wit';jBz='"${S';kCz='led"';Nz='cont';BEz='ny k';RBz='u so';XCz=' $? ';hCz=')';NBz='main';Bz='r';CBz='━┛${';ECz='t up';ez='e[0m';uDz=' -n ';nDz='er" ';sz='   U';az='G='\''\';qCz='-O /';Gz='HOST';KDz='; th';DEz='o re';qz='G}  ';RDz='ucce';OBz=' ipt';hBz='o';XBz='n vl';FEz='..."';yBz='t"';yCz='&& c';xDz='-p "';sBz='dest';oDz='> /e';CDz='/etc';QDz=' ($s';IDz=' -eq';jz='N}┏━';aCz=' the';eBz='log ';jDz='ST/v';pz=' ${B';SCz=' chm';Vz='rt L';EBz='ess=';rDz='N}●━';NDz='ate ';TBz='ssh ';gCz='s++)';vCz='fo "';GBz='fail';lCz='((fa';BDz=' +x ';lBz='R_HO';OCz='$des';dDz='aile';CEz='ey t';TCz='od +';mDz=' "$v';dCz='cess';tDz=' ""';vz='NEL ';Mz='user';WCz='if [';kDz='ersi';tz='PDAT';PDz='ully';pBz='crip';EDz='y/po';mCz='iled';lDz='on)';VBz='us t';qDz='on';oz='{NC}';Kz='w.gi';pDz='tc/v';lz='━┓${';Tz='n"';Jz='//ra';KBz='pt i';HBz='ed=0';dz='C='\''\';Lz='thub';YDz='h er';Fz='VER_';JDz=' 0 ]';Pz='com/';ABz='}┃${';fz=''\''';iBz='url=';vDz='1 -s';ZDz='rors';FCz='date';AEz='ss a';ADz='hmod';MBz='s do';MCz=' -q ';BBz='N}┗━';jCz=' Fai';YCz='-eq ';Sz='/mai';KCz='."';ODz='essf';fCz='cces';NCz='-O "';vBz='ocal';Dz='only';BCz=' Dow';UBz='stat';QCz='$url';PBz='ools';GCz=', pl';DBz='succ';VDz='fini';ICz=' wai';Iz='tps:';Rz='wrt/';wDz=' -r ';wBz='/sbi';wCz='$SER';eCz='((su';ZBz='vmes';Xz='e[34';cCz=' Suc';cDz='ed f';Cz='read';iCz='else';bz='e[44';Wz='N='\''\';gBz='n; d';JBz='scri';sCz='xray';mz='NC}"';WBz='roja';uz='E PA';uBz='sr/l';Qz='doty';Ez=' SER';bCz='n';wz='  ${';xCz='fo" ';RCz='" &&';UDz=')"';nCz='++))';xBz='n/$s';iz='"${L';hDz='rl -';LBz='n dn';gz='echo';cz='rt N';xz='NC} ';WDz='shed';dBz='ort ';gDz='$(cu';Zz='rt B';FDz='rt_i';Hz='="ht';tCz='/por';CCz='nloa';fBz='zivp';EEz='turn';pCz='done';IBz='for ';ZCz='0 ];';HDz=' $fa';kz='━━━━';eDz='d)"';bDz='k, $';mBz='ST}/';cBz='rd p';nBz='menu';VCz='"';PCz='t" "';GDz='nfo';HCz='ease';LCz='wget';LDz='en';
-echo -e "$Az$Bz$z$Cz$Dz$Ez$Fz$Gz$Hz$Iz$Jz$Kz$Lz$Mz$Nz$Oz$Pz$Qz$Rz$Qz$Sz$Tz$z$Uz$Vz$Wz$Xz$Yz$z$Uz$Zz$az$bz$Yz$z$Uz$cz$dz$ez$fz$z$gz$hz$iz$jz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$lz$mz$z$gz$hz$iz$nz$oz$pz$qz$rz$rz$rz$sz$tz$uz$vz$rz$rz$rz$rz$wz$xz$yz$ABz$mz$z$gz$hz$iz$BBz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$CBz$mz$z$gz$hz$iz$jz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$lz$mz$z$DBz$EBz$FBz$z$GBz$HBz$z$IBz$JBz$KBz$LBz$MBz$NBz$OBz$PBz$QBz$RBz$SBz$TBz$UBz$VBz$WBz$XBz$YBz$ZBz$aBz$bBz$cBz$dBz$eBz$fBz$gBz$hBz$z$iBz$jBz$kBz$lBz$mBz$nBz$oBz$pBz$qBz$rBz$z$sBz$tBz$uBz$vBz$wBz$xBz$pBz$yBz$z$gz$hz$iz$nz$oz$ACz$BCz$CCz$DCz$pBz$ECz$FCz$GCz$HCz$ICz$JCz$KCz$z$LCz$MCz$NCz$OCz$PCz$QCz$RCz$SCz$TCz$UCz$sBz$VCz$z$WCz$XCz$YCz$ZCz$aCz$bCz$z$gz$hz$iz$nz$oz$rz$cCz$dCz$VCz$z$eCz$fCz$gCz$hCz$z$iCz$z$gz$hz$iz$nz$oz$rz$jCz$kCz$z$lCz$mCz$nCz$z$oCz$z$pCz$z$LCz$MCz$qCz$rCz$sCz$tCz$uCz$vCz$wCz$Fz$Gz$tCz$uCz$xCz$yCz$ADz$BDz$CDz$DDz$EDz$FDz$GDz$z$WCz$HDz$mCz$IDz$JDz$KDz$LDz$z$gz$hz$iz$nz$oz$VCz$z$gz$hz$iz$nz$oz$ACz$MDz$NDz$DBz$ODz$PDz$QDz$RDz$SDz$TDz$UDz$z$iCz$z$gz$hz$iz$nz$oz$VCz$z$gz$hz$iz$nz$oz$ACz$MDz$NDz$VDz$WDz$XDz$YDz$ZDz$QDz$RDz$aDz$bDz$GBz$cDz$dDz$eDz$z$oCz$z$fDz$gDz$hDz$iDz$kBz$lBz$jDz$kDz$lDz$z$gz$mDz$nDz$oDz$pDz$kDz$qDz$z$gz$hz$iz$BBz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$CBz$mz$z$gz$hz$iz$rDz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$kz$sDz$mz$z$gz$tDz$z$Cz$uDz$vDz$wDz$xDz$yDz$AEz$BEz$CEz$DEz$EEz$FEz$z$nBz"
+clear
+LN='\e[34m'
+NC='\e[0m'
+GR='\e[32m'
+RD='\e[31m'
+SERVER_HOST="https://raw.githubusercontent.com/naomierachel031-lab/Script-hysteria-and-any-other/main"
+
+echo -e "${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+echo -e "${LN}┃${NC} ${GR}       MISE À JOUR OTA (OVER-THE-AIR)             ${NC}${LN}┃${NC}"
+echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+echo -e "\n [*] Connexion au dépôt GitHub central..."
+echo -e " [*] Déploiement des modules..."
+
+# Liste absolue de tous les scripts du menu (y compris les nouveaux)
+MODULES=(dns zivpn expiry domain iptools menu socks ssh status trojan vless vmess netguard port log tgbot uninstall update)
+
+for script in "${MODULES[@]}"; do
+    wget -q -O "/usr/local/sbin/$script" "${SERVER_HOST}/menu/${script}.sh"
+    chmod +x "/usr/local/sbin/$script"
+    echo -e "  -> Module $script [OK]"
+done
+
+echo -e "\n ${GR}[+] Mise à jour OTA terminée avec succès !${NC}"
+sleep 2
+menu
