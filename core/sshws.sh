@@ -1,6 +1,6 @@
 clear
 export DEBIAN_FRONTEND=noninteractive
-export SERVER_HOST="https://raw.githubusercontent.com/dotywrt/doty/main"
+export SERVER_HOST="https://raw.githubusercontent.com/naomierachel031-lab/Script-hysteria-and-any-other/main"
 setup_variables() {
 MYIP=$(wget -qO- ipv4.icanhazip.com)
 NET=$(ip -o -4 route show to default | awk '{print $5}')

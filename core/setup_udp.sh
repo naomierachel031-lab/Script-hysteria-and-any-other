@@ -1,5 +1,5 @@
 clear
-export SERVER_HOST="https://raw.githubusercontent.com/dotywrt/doty/main"
+export SERVER_HOST="https://raw.githubusercontent.com/naomierachel031-lab/Script-hysteria-and-any-other/main"
 export UDP_DIR="/etc/udp-custom"
 export SERVICE_FILE="/etc/systemd/system/udp-custom.service"
 update_system() {

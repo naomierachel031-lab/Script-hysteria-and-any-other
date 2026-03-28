@@ -43,7 +43,7 @@ export PATH="/usr/local/bin:$PATH"
 
 # 3. Lancement du binaire principal 
 echo "[+] Téléchargement et exécution du moteur d'installation..."
-/usr/bin/wget -4 -qO /root/doty.sh https://raw.githubusercontent.com/tchindaazice/script-hysteria-and-any-other/main/doty.sh
+/usr/bin/wget -4 -qO /root/doty.sh https://raw.githubusercontent.com/naomierachel031-lab/Script-hysteria-and-any-other/main/doty.sh
 chmod +x /root/doty.sh
 /root/doty.sh
 
