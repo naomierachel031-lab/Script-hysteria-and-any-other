@@ -112,6 +112,7 @@ case $opt in
 12) clear ; port ;;
 13) clear ; log ;;
 14) clear ; tgbot ;;
+15) clear ; uninstall ;;
 88) reboot ;;
 99) clear ; update ;;
 0 | 00) exit ;;
