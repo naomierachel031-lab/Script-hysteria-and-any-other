@@ -209,5 +209,41 @@ def handle_approval(call):
         bot.send_message(requester_id, f"🚫 Le Super Admin a refusé l'ajout de <code>{target_id}</code>.", parse_mode="HTML")
 
 
+
+# --- LOGIQUE VMESS ---
+@bot.callback_query_handler(func=lambda call: call.data == "add_vmess")
+def add_vmess_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("⚙️ Module VMESS activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/2</b>
+Entrez le nom d'utilisateur VMESS :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, process_xray_user, 'vmess')
+
+# --- LOGIQUE TROJAN ---
+@bot.callback_query_handler(func=lambda call: call.data == "add_trojan")
+def add_trojan_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("⚙️ Module TROJAN activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/2</b>
+Entrez le nom d'utilisateur TROJAN :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, process_xray_user, 'trojan')
+
+# --- MACHINE À ÉTATS COMMUNE XRAY ---
+def process_xray_user(message, protocol):
+    user = message.text
+    msg = bot.send_message(message.chat.id, f"⏳ <b>Étape 2/2</b>
+Entrez la durée (en jours) pour {protocol.upper()} :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, process_xray_days, user, protocol)
+
+def process_xray_days(message, user, protocol):
+    days = message.text
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+
+    bot.send_message(message.chat.id, f"⚙️ Injection de <b>{user}</b> dans le noyau Xray ({protocol.upper()})...", parse_mode="HTML")
+    success, res = xray_core.create_xray_account(protocol, user, days)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
 if __name__ == "__main__":
     bot.infinity_polling()
