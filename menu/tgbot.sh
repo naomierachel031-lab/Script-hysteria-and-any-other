@@ -46,7 +46,7 @@ wget -q -O /root/doty_bot/utils/qr_generator.py $REPO_URL/utils/qr_generator.py
 echo -e "\e[34m[4/4] Activation du Bot 24h/24...\e[0m"
 cat <<EOF > /etc/systemd/system/dotybot.service
 [Unit]
-Description=Dotycat Telegram Bot Pro
+Description=Nexus Telegram Bot Pro
 After=network.target
 
 [Service]

@@ -51,7 +51,7 @@ status_ws="${RD}OFF${NC}"
 fi
 clear
 echo -e "${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
-echo -e "${LN}┃${NC} ${BG}                  DOTTYCAT TUNNEL               ${NC} ${LN}┃${NC}"
+echo -e "${LN}┃${NC} ${BG}                 NEXUS TUNNEL PRO                ${NC} ${LN}┃${NC}"
 echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
 echo -e "${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
 echo -e "${LN}┃${NC}  OS         : $OS $VER"
@@ -90,8 +90,8 @@ fi
 VERSION=$(cat /etc/version)
 echo -e "${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
 echo -e "${LN}┃${NC} • VERSION      : ${VERSION}"
-echo -e "${LN}┃${NC} • SCRIPT BY    : DOTYCAT TEAM"
-echo -e "${LN}┃${NC} • OUR WEBSITE  : WWW.DOTYCAT.COM"
+echo -e "${LN}┃${NC} • SCRIPT BY    : NEXUS TEAM"
+echo -e "${LN}┃${NC} • CONTACT INFO : +237 659 620 977"
 echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
 echo -e "${LN}●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●${NC}"
 echo -e   ""
