@@ -2,7 +2,10 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
 import os
-from modules import system_core, ssh_core, admin_core
+import logging
+from modules import system_core, ssh_core, admin_core, xray_core, zivpn_core
+
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(message)s')
 
 CONFIG_FILE = '/etc/nexus_bot/config.json'
 
@@ -20,26 +23,38 @@ def is_admin(user_id):
     cfg = load_config()
     return user_id == SUPER_ADMIN or user_id in cfg.get('admins', [])
 
-# --- MATRICE DU MENU PRINCIPAL ---
+# --- MENU PRINCIPAL ---
 def main_menu_keyboard():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("01 • SSH/WS", callback_data="menu_ssh"),
-        InlineKeyboardButton("02 • VMESS", callback_data="menu_vmess"),
-        InlineKeyboardButton("03 • VLESS", callback_data="menu_vless"),
-        InlineKeyboardButton("04 • TROJAN", callback_data="menu_trojan"),
-        InlineKeyboardButton("05 • SOCKS", callback_data="menu_socks"),
-        InlineKeyboardButton("06 • ZIVPN", callback_data="menu_zivpn"),
-        InlineKeyboardButton("07 • DNS PANEL", callback_data="menu_dns"),
-        InlineKeyboardButton("08 • DOMAIN", callback_data="menu_domain"),
-        InlineKeyboardButton("09 • IPTOOLS", callback_data="menu_iptools"),
-        InlineKeyboardButton("10 • VPS STATUS", callback_data="menu_status"),
-        InlineKeyboardButton("11 • NETGUARD", callback_data="menu_netguard"),
-        InlineKeyboardButton("12 • PORT INFO", callback_data="menu_port"),
-        InlineKeyboardButton("13 • CLEAN LOGS", callback_data="menu_log"),
-        InlineKeyboardButton("👑 GESTION ADMINS", callback_data="menu_admins"),
+        InlineKeyboardButton("🔑 SSH/WS", callback_data="menu_ssh"),
+        InlineKeyboardButton("🔰 VMESS", callback_data="menu_vmess"),
+        InlineKeyboardButton("🔰 VLESS", callback_data="menu_vless"),
+        InlineKeyboardButton("🔰 TROJAN", callback_data="menu_trojan"),
+        InlineKeyboardButton("🔌 SOCKS", callback_data="menu_socks"),
+        InlineKeyboardButton("📱 ZIVPN", callback_data="menu_zivpn"),
+        InlineKeyboardButton("📊 VPS STATUS", callback_data="menu_status"),
+        InlineKeyboardButton("🧹 CLEAN LOGS", callback_data="menu_log"),
+        InlineKeyboardButton("👑 ADMINS", callback_data="menu_admins"),
         InlineKeyboardButton("🔄 REBOOT VPS", callback_data="action_reboot")
     )
+    return markup
+
+def protocol_menu_keyboard(proto):
+    """Builds a full CRUD sub-menu for any protocol."""
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton(f"➕ Créer compte {proto.upper()}", callback_data=f"add_{proto}"),
+        InlineKeyboardButton(f"🔄 Renouveler compte {proto.upper()}", callback_data=f"renew_{proto}"),
+        InlineKeyboardButton(f"🗑️ Supprimer compte {proto.upper()}", callback_data=f"del_{proto}"),
+        InlineKeyboardButton(f"📋 Liste des comptes {proto.upper()}", callback_data=f"list_{proto}"),
+    )
+    if proto == 'ssh':
+        markup.add(
+            InlineKeyboardButton("🔒 Verrouiller un compte", callback_data="lock_ssh"),
+            InlineKeyboardButton("🔓 Déverrouiller un compte", callback_data="unlock_ssh"),
+        )
+    markup.add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
     return markup
 
 @bot.message_handler(commands=['start'])
@@ -47,86 +62,269 @@ def send_welcome(message):
     if not is_admin(message.from_user.id):
         bot.reply_to(message, "⛔ Accès refusé.")
         return
-    bot.send_message(message.chat.id, "<b>🟢 NEXUS TUNNEL PRO - C2 SERVER</b>\nSélectionnez un module :", parse_mode="HTML", reply_markup=main_menu_keyboard())
+    bot.send_message(
+        message.chat.id,
+        "<b>🟢 NEXUS TUNNEL PRO - C2 SERVER</b>\nSélectionnez un module :",
+        parse_mode="HTML",
+        reply_markup=main_menu_keyboard()
+    )
 
 # --- RETOUR À L'ACCUEIL ---
 @bot.callback_query_handler(func=lambda call: call.data == "action_home")
 def home_callback(call):
     if not is_admin(call.from_user.id): return
-    bot.edit_message_text("<b>🟢 NEXUS TUNNEL PRO - C2 SERVER</b>\nSélectionnez un module :", 
-                          chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                          parse_mode="HTML", reply_markup=main_menu_keyboard())
-
-# --- ROUTEUR DYNAMIQUE DES SOUS-MENUS ---
-@bot.callback_query_handler(func=lambda call: call.data.startswith("menu_"))
-def module_routing(call):
-    if not is_admin(call.from_user.id): return
-    
-    # Extraction du nom du module (ex: "menu_ssh" devient "SSH")
-    module = call.data.split("_")[1].upper()
-    
-    markup = InlineKeyboardMarkup(row_width=1)
-    # Boutons générés automatiquement selon le module cliqué
-    markup.add(
-        InlineKeyboardButton(f"➕ Créer compte {module}", callback_data=f"add_{module.lower()}"),
-        InlineKeyboardButton(f"📋 Liste des comptes", callback_data=f"list_{module.lower()}"),
-        InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home")
+    bot.edit_message_text(
+        "<b>🟢 NEXUS TUNNEL PRO - C2 SERVER</b>\nSélectionnez un module :",
+        chat_id=call.message.chat.id, message_id=call.message.message_id,
+        parse_mode="HTML", reply_markup=main_menu_keyboard()
     )
-    
-    # MODIFICATION DU MESSAGE SANS EN CRÉER UN NOUVEAU
-    bot.edit_message_text(f"<b>Module {module}</b>\nChoisissez une action :", 
-                          chat_id=call.message.chat.id, message_id=call.message.message_id, 
-                          parse_mode="HTML", reply_markup=markup)
 
+# --- SOUS-MENUS PROTOCOLES ---
+@bot.callback_query_handler(func=lambda call: call.data in (
+    "menu_ssh", "menu_vmess", "menu_vless", "menu_trojan", "menu_socks", "menu_zivpn"
+))
+def protocol_submenu(call):
+    if not is_admin(call.from_user.id): return
+    proto = call.data.split("_", 1)[1]
+    bot.edit_message_text(
+        f"<b>Module {proto.upper()}</b>\nChoisissez une action :",
+        chat_id=call.message.chat.id, message_id=call.message.message_id,
+        parse_mode="HTML", reply_markup=protocol_menu_keyboard(proto)
+    )
 
-# --- LOGIQUE DE CRÉATION SSH (STATE MACHINE) ---
+# ═══════════════════════════════════════════════════════════
+# SSH — CRÉATION
+# ═══════════════════════════════════════════════════════════
 @bot.callback_query_handler(func=lambda call: call.data == "add_ssh")
 def add_ssh_start(call):
     if not is_admin(call.from_user.id): return
-    bot.edit_message_text("⚙️ Module SSH activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
-    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/3</b>
-Entrez le nom d'utilisateur SSH :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_ssh_user)
+    bot.edit_message_text("⚙️ Module SSH — Création", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/3</b>\nEntrez le nom d'utilisateur SSH :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _ssh_get_user, call.from_user.id)
 
-def process_ssh_user(message):
-    user = message.text
-    msg = bot.send_message(message.chat.id, "🔑 <b>Étape 2/3</b>
-Entrez le mot de passe :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_ssh_pass, user)
+def _ssh_get_user(message, creator_id):
+    user = message.text.strip()
+    msg = bot.send_message(message.chat.id, "🔑 <b>Étape 2/3</b>\nEntrez le mot de passe :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _ssh_get_pass, user, creator_id)
 
-def process_ssh_pass(message, user):
-    password = message.text
-    msg = bot.send_message(message.chat.id, "⏳ <b>Étape 3/3</b>
-Entrez la durée (en jours) :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_ssh_days, user, password)
+def _ssh_get_pass(message, user, creator_id):
+    password = message.text.strip()
+    msg = bot.send_message(message.chat.id, "⏳ <b>Étape 3/3</b>\nEntrez la durée (en jours) :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _ssh_get_days, user, password, creator_id)
 
-def process_ssh_days(message, user, password):
-    days = message.text
+def _ssh_get_days(message, user, password, creator_id):
+    days = message.text.strip()
     if not days.isdigit():
-        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier. Annulation.", reply_markup=main_menu_keyboard())
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
         return
+    bot.send_message(message.chat.id, f"⚙️ Création du compte <b>{user}</b>...", parse_mode="HTML")
+    success, res = ssh_core.create_ssh_account(user, password, days, created_by_id=creator_id)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
 
-    bot.send_message(message.chat.id, f"⚙️ Déploiement du compte <b>{user}</b> au niveau du noyau...", parse_mode="HTML")
-    
-    import subprocess
-    # Exécution silencieuse en contournant l'interface bash interactive
-    cmd = f"useradd -e $(date -d '{days} days' +'%Y-%m-%d') -s /bin/false -M {user} && echo '{user}:{password}' | chpasswd"
-    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    
-    if res.returncode == 0:
-        success_msg = f"✅ <b>COMPTE SSH FORGÉ AVEC SUCCÈS</b>
+# SSH — RENOUVELLEMENT
+@bot.callback_query_handler(func=lambda call: call.data == "renew_ssh")
+def renew_ssh_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("🔄 Module SSH — Renouvellement", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 Entrez le nom d'utilisateur SSH à renouveler :")
+    bot.register_next_step_handler(msg, _ssh_renew_get_days)
 
-👤 Username : <code>{user}</code>
-🔑 Password : <code>{password}</code>
-⏳ Validité : {days} Jours"
-        bot.send_message(message.chat.id, success_msg, parse_mode="HTML", reply_markup=main_menu_keyboard())
+def _ssh_renew_get_days(message):
+    user = message.text.strip()
+    msg = bot.send_message(message.chat.id, f"⏳ Combien de jours ajouter au compte <code>{user}</code> ?", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _ssh_renew_execute, user)
+
+def _ssh_renew_execute(message, user):
+    days = message.text.strip()
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+    success, res = ssh_core.renew_ssh_account(user, days)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# SSH — SUPPRESSION
+@bot.callback_query_handler(func=lambda call: call.data == "del_ssh")
+def del_ssh_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("🗑️ Module SSH — Suppression", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 Entrez le nom d'utilisateur SSH à supprimer :")
+    bot.register_next_step_handler(msg, _ssh_del_execute)
+
+def _ssh_del_execute(message):
+    user = message.text.strip()
+    success, res = ssh_core.delete_ssh_account(user)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# SSH — VERROUILLAGE / DÉVERROUILLAGE
+@bot.callback_query_handler(func=lambda call: call.data in ("lock_ssh", "unlock_ssh"))
+def lock_unlock_ssh_start(call):
+    if not is_admin(call.from_user.id): return
+    action = call.data  # "lock_ssh" or "unlock_ssh"
+    label = "verrouiller" if action == "lock_ssh" else "déverrouiller"
+    bot.edit_message_text(f"🔒 SSH — {label.capitalize()}", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, f"👤 Entrez le nom d'utilisateur SSH à {label} :")
+    bot.register_next_step_handler(msg, _ssh_lock_execute, action)
+
+def _ssh_lock_execute(message, action):
+    user = message.text.strip()
+    if action == "lock_ssh":
+        success, res = ssh_core.lock_ssh_account(user)
     else:
-        bot.send_message(message.chat.id, f"❌ Échec de la création :
-<code>{res.stderr}</code>", parse_mode="HTML", reply_markup=main_menu_keyboard())
+        success, res = ssh_core.unlock_ssh_account(user)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
 
+# SSH — LISTE
+@bot.callback_query_handler(func=lambda call: call.data == "list_ssh")
+def handle_list_ssh(call):
+    if not is_admin(call.from_user.id): return
+    result = ssh_core.list_ssh_accounts()
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
 
+# ═══════════════════════════════════════════════════════════
+# XRAY — MACHINE À ÉTATS COMMUNE (VLESS / VMESS / TROJAN / SOCKS)
+# ═══════════════════════════════════════════════════════════
+@bot.callback_query_handler(func=lambda call: call.data in ("add_vless", "add_vmess", "add_trojan", "add_socks"))
+def add_xray_start(call):
+    if not is_admin(call.from_user.id): return
+    proto = call.data.split("_", 1)[1]
+    bot.edit_message_text(f"⚙️ Module {proto.upper()} — Création", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, f"👤 <b>Étape 1/2</b>\nEntrez le nom d'utilisateur {proto.upper()} :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _xray_get_user, proto, call.from_user.id)
 
-# --- LOGIQUE SYSTÈME ---
+def _xray_get_user(message, proto, creator_id):
+    user = message.text.strip()
+    msg = bot.send_message(message.chat.id, f"⏳ <b>Étape 2/2</b>\nEntrez la durée (en jours) pour {proto.upper()} :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _xray_get_days, user, proto, creator_id)
+
+def _xray_get_days(message, user, proto, creator_id):
+    days = message.text.strip()
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+    bot.send_message(message.chat.id, f"⚙️ Injection de <b>{user}</b> dans le noyau Xray ({proto.upper()})...", parse_mode="HTML")
+    success, res = xray_core.create_xray_account(proto, user, days, created_by_id=creator_id)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# XRAY — RENOUVELLEMENT
+@bot.callback_query_handler(func=lambda call: call.data in ("renew_vless", "renew_vmess", "renew_trojan", "renew_socks"))
+def renew_xray_start(call):
+    if not is_admin(call.from_user.id): return
+    proto = call.data.split("_", 1)[1]
+    bot.edit_message_text(f"🔄 {proto.upper()} — Renouvellement", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, f"👤 Entrez le nom d'utilisateur {proto.upper()} à renouveler :")
+    bot.register_next_step_handler(msg, _xray_renew_get_days, proto)
+
+def _xray_renew_get_days(message, proto):
+    user = message.text.strip()
+    msg = bot.send_message(message.chat.id, f"⏳ Combien de jours ajouter au compte <code>{user}</code> ?", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _xray_renew_execute, proto, user)
+
+def _xray_renew_execute(message, proto, user):
+    days = message.text.strip()
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+    success, res = xray_core.renew_xray_account(proto, user, days)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# XRAY — SUPPRESSION
+@bot.callback_query_handler(func=lambda call: call.data in ("del_vless", "del_vmess", "del_trojan", "del_socks"))
+def del_xray_start(call):
+    if not is_admin(call.from_user.id): return
+    proto = call.data.split("_", 1)[1]
+    bot.edit_message_text(f"🗑️ {proto.upper()} — Suppression", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, f"👤 Entrez le nom d'utilisateur {proto.upper()} à supprimer :")
+    bot.register_next_step_handler(msg, _xray_del_execute, proto)
+
+def _xray_del_execute(message, proto):
+    user = message.text.strip()
+    success, res = xray_core.delete_xray_account(proto, user)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# XRAY — LISTE
+@bot.callback_query_handler(func=lambda call: call.data in ("list_vless", "list_vmess", "list_trojan", "list_socks"))
+def handle_list_xray(call):
+    if not is_admin(call.from_user.id): return
+    proto = call.data.split("_", 1)[1]
+    result = xray_core.list_xray_accounts(proto)
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
+# ═══════════════════════════════════════════════════════════
+# ZIVPN — CRÉATION
+# ═══════════════════════════════════════════════════════════
+@bot.callback_query_handler(func=lambda call: call.data == "add_zivpn")
+def add_zivpn_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("⚙️ Module ZIVPN — Création", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/3</b>\nEntrez le nom d'utilisateur ZIVPN :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _zivpn_get_user, call.from_user.id)
+
+def _zivpn_get_user(message, creator_id):
+    user = message.text.strip()
+    msg = bot.send_message(message.chat.id, "🔑 <b>Étape 2/3</b>\nEntrez le mot de passe :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _zivpn_get_pass, user, creator_id)
+
+def _zivpn_get_pass(message, user, creator_id):
+    password = message.text.strip()
+    msg = bot.send_message(message.chat.id, "⏳ <b>Étape 3/3</b>\nEntrez la durée (en jours) :", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _zivpn_get_days, user, password, creator_id)
+
+def _zivpn_get_days(message, user, password, creator_id):
+    days = message.text.strip()
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+    bot.send_message(message.chat.id, f"⚙️ Création du compte <b>{user}</b> (ZIVPN)...", parse_mode="HTML")
+    success, res = zivpn_core.create_zivpn_account(user, password, days, created_by_id=creator_id)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# ZIVPN — RENOUVELLEMENT
+@bot.callback_query_handler(func=lambda call: call.data == "renew_zivpn")
+def renew_zivpn_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("🔄 ZIVPN — Renouvellement", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 Entrez le nom d'utilisateur ZIVPN à renouveler :")
+    bot.register_next_step_handler(msg, _zivpn_renew_get_days)
+
+def _zivpn_renew_get_days(message):
+    user = message.text.strip()
+    msg = bot.send_message(message.chat.id, f"⏳ Combien de jours ajouter au compte <code>{user}</code> ?", parse_mode="HTML")
+    bot.register_next_step_handler(msg, _zivpn_renew_execute, user)
+
+def _zivpn_renew_execute(message, user):
+    days = message.text.strip()
+    if not days.isdigit():
+        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+        return
+    success, res = zivpn_core.renew_zivpn_account(user, days)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# ZIVPN — SUPPRESSION
+@bot.callback_query_handler(func=lambda call: call.data == "del_zivpn")
+def del_zivpn_start(call):
+    if not is_admin(call.from_user.id): return
+    bot.edit_message_text("🗑️ ZIVPN — Suppression", chat_id=call.message.chat.id, message_id=call.message.message_id)
+    msg = bot.send_message(call.message.chat.id, "👤 Entrez le nom d'utilisateur ZIVPN à supprimer :")
+    bot.register_next_step_handler(msg, _zivpn_del_execute)
+
+def _zivpn_del_execute(message):
+    user = message.text.strip()
+    success, res = zivpn_core.delete_zivpn_account(user)
+    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+
+# ZIVPN — LISTE
+@bot.callback_query_handler(func=lambda call: call.data == "list_zivpn")
+def handle_list_zivpn(call):
+    if not is_admin(call.from_user.id): return
+    result = zivpn_core.list_zivpn_accounts()
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
+    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
+# ═══════════════════════════════════════════════════════════
+# SYSTÈME
+# ═══════════════════════════════════════════════════════════
 @bot.callback_query_handler(func=lambda call: call.data == "menu_status")
 def handle_status(call):
     if not is_admin(call.from_user.id): return
@@ -141,149 +339,136 @@ def handle_clean_logs(call):
     markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
     bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data == "list_ssh")
-def handle_list_ssh(call):
-    if not is_admin(call.from_user.id): return
-    result = ssh_core.list_ssh_accounts()
-    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
-    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+@bot.callback_query_handler(func=lambda call: call.data == "action_reboot")
+def handle_reboot(call):
+    if not admin_core.is_super_admin(call.from_user.id): return
+    bot.answer_callback_query(call.id, "♻️ Reboot en cours...")
+    bot.send_message(call.message.chat.id, "♻️ <b>Reboot VPS lancé.</b>", parse_mode="HTML")
+    import subprocess
+    subprocess.run("reboot", shell=True)
 
-
-# --- LOGIQUE DE GESTION DES ADMINISTRATEURS ---
+# ═══════════════════════════════════════════════════════════
+# GESTION DES ADMINISTRATEURS
+# ═══════════════════════════════════════════════════════════
 @bot.callback_query_handler(func=lambda call: call.data == "menu_admins")
 def handle_menu_admins(call):
     if not is_admin(call.from_user.id): return
+    is_super = admin_core.is_super_admin(call.from_user.id)
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
-        InlineKeyboardButton("➕ Proposer un Admin", callback_data="req_add_admin"),
-        InlineKeyboardButton("❌ Révoquer un Admin", callback_data="req_del_admin"),
+        InlineKeyboardButton("📋 Liste des admins", callback_data="list_admins"),
+        InlineKeyboardButton("➕ Ajouter un admin", callback_data="req_add_admin"),
+        InlineKeyboardButton("❌ Supprimer un admin", callback_data="req_del_admin"),
         InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home")
     )
     msg = admin_core.list_admins()
     bot.edit_message_text(msg, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
 
+@bot.callback_query_handler(func=lambda call: call.data == "list_admins")
+def handle_list_admins(call):
+    if not is_admin(call.from_user.id): return
+    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Admins", callback_data="menu_admins"))
+    bot.edit_message_text(admin_core.list_admins(), chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+
 @bot.callback_query_handler(func=lambda call: call.data == "req_add_admin")
 def req_add_admin(call):
     if not is_admin(call.from_user.id): return
     msg = bot.send_message(call.message.chat.id, "👤 Entrez l'ID Telegram du nouvel administrateur :")
-    bot.register_next_step_handler(msg, process_add_admin_request, call.from_user.id)
+    bot.register_next_step_handler(msg, _process_add_admin, call.from_user.id)
 
-def process_add_admin_request(message, requester_id):
-    target_id = message.text
+def _process_add_admin(message, requester_id):
+    target_id = message.text.strip()
     if not target_id.isdigit():
-        bot.send_message(message.chat.id, "❌ L'ID doit être un nombre.")
+        bot.send_message(message.chat.id, "❌ L'ID doit être un nombre entier.")
         return
-        
+
     if admin_core.is_super_admin(requester_id):
-        # Si c'est le Super Admin qui demande, on ajoute direct
         success, res = admin_core.approve_new_admin(target_id)
-        bot.send_message(message.chat.id, f"✅ Action Super Admin: {res}" if success else f"❌ {res}")
+        status = "✅" if success else "❌"
+        bot.send_message(message.chat.id, f"{status} {res}", reply_markup=main_menu_keyboard())
     else:
-        # Si c'est un simple Admin, on envoie la demande au Super Admin
         bot.send_message(message.chat.id, "⏳ <b>Demande envoyée au Super Admin pour approbation.</b>", parse_mode="HTML")
-        
         super_admin_id = admin_core.get_config().get('super_admin')
         markup = InlineKeyboardMarkup(row_width=2)
         markup.add(
-            InlineKeyboardButton("✅ Approuver", callback_data=f"approve_{target_id}_{requester_id}"),
-            InlineKeyboardButton("❌ Refuser", callback_data=f"reject_{target_id}_{requester_id}")
+            InlineKeyboardButton("✅ Approuver", callback_data=f"adm:approve:{target_id}:{requester_id}"),
+            InlineKeyboardButton("❌ Refuser", callback_data=f"adm:reject:{target_id}:{requester_id}")
         )
-        bot.send_message(super_admin_id, f"⚠️ <b>NOUVELLE REQUÊTE D'ADMINISTRATION</b>
+        bot.send_message(
+            super_admin_id,
+            f"⚠️ <b>REQUÊTE ADMIN</b>\n\nL'admin <code>{requester_id}</code> souhaite ajouter <code>{target_id}</code>.",
+            parse_mode="HTML", reply_markup=markup
+        )
 
-L'admin <code>{requester_id}</code> souhaite ajouter <code>{target_id}</code> comme administrateur.", parse_mode="HTML", reply_markup=markup)
-
-# Gestion de la réponse du Super Admin
-@bot.callback_query_handler(func=lambda call: call.data.startswith("approve_") or call.data.startswith("reject_"))
-def handle_approval(call):
+@bot.callback_query_handler(func=lambda call: call.data.startswith("adm:approve:") or call.data.startswith("adm:reject:"))
+def handle_admin_approval(call):
     if not admin_core.is_super_admin(call.from_user.id): return
-    
-    action, target_id, requester_id = call.data.split("_")
-    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None) # Efface les boutons
-    
+    parts = call.data.split(":")
+    action, target_id, requester_id = parts[1], parts[2], parts[3]
+
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
+
     if action == "approve":
         success, res = admin_core.approve_new_admin(target_id)
         bot.send_message(call.message.chat.id, f"✅ Vous avez approuvé <code>{target_id}</code>.", parse_mode="HTML")
-        bot.send_message(requester_id, f"🎉 <b>Félicitations !</b> Le Super Admin a approuvé votre demande pour <code>{target_id}</code>.", parse_mode="HTML")
+        try:
+            bot.send_message(int(requester_id), f"🎉 Votre demande pour <code>{target_id}</code> a été approuvée.", parse_mode="HTML")
+        except Exception as e:
+            logging.warning("Could not notify requester %s: %s", requester_id, e)
     else:
         bot.send_message(call.message.chat.id, f"❌ Vous avez refusé <code>{target_id}</code>.", parse_mode="HTML")
-        bot.send_message(requester_id, f"🚫 Le Super Admin a refusé l'ajout de <code>{target_id}</code>.", parse_mode="HTML")
+        try:
+            bot.send_message(int(requester_id), f"🚫 Le Super Admin a refusé l'ajout de <code>{target_id}</code>.", parse_mode="HTML")
+        except Exception as e:
+            logging.warning("Could not notify requester %s: %s", requester_id, e)
 
-
-
-# --- LOGIQUE VMESS ---
-@bot.callback_query_handler(func=lambda call: call.data == "add_vmess")
-def add_vmess_start(call):
+@bot.callback_query_handler(func=lambda call: call.data == "req_del_admin")
+def req_del_admin(call):
     if not is_admin(call.from_user.id): return
-    bot.edit_message_text("⚙️ Module VMESS activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
-    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/2</b>
-Entrez le nom d'utilisateur VMESS :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_xray_user, 'vmess')
+    msg = bot.send_message(call.message.chat.id, "👤 Entrez l'ID Telegram de l'administrateur à révoquer :")
+    bot.register_next_step_handler(msg, _process_del_admin, call.from_user.id)
 
-# --- LOGIQUE TROJAN ---
-@bot.callback_query_handler(func=lambda call: call.data == "add_trojan")
-def add_trojan_start(call):
-    if not is_admin(call.from_user.id): return
-    bot.edit_message_text("⚙️ Module TROJAN activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
-    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/2</b>
-Entrez le nom d'utilisateur TROJAN :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_xray_user, 'trojan')
-
-# --- MACHINE À ÉTATS COMMUNE XRAY ---
-def process_xray_user(message, protocol):
-    user = message.text
-    msg = bot.send_message(message.chat.id, f"⏳ <b>Étape 2/2</b>
-Entrez la durée (en jours) pour {protocol.upper()} :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_xray_days, user, protocol)
-
-def process_xray_days(message, user, protocol):
-    days = message.text
-    if not days.isdigit():
-        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
+def _process_del_admin(message, requester_id):
+    target_id = message.text.strip()
+    if not target_id.isdigit():
+        bot.send_message(message.chat.id, "❌ L'ID doit être un nombre entier.")
         return
 
-    bot.send_message(message.chat.id, f"⚙️ Injection de <b>{user}</b> dans le noyau Xray ({protocol.upper()})...", parse_mode="HTML")
-    success, res = xray_core.create_xray_account(protocol, user, days)
-    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
+    if admin_core.is_super_admin(requester_id):
+        success, res = admin_core.remove_admin(target_id)
+        status = "✅" if success else "❌"
+        bot.send_message(message.chat.id, f"{status} {res}", reply_markup=main_menu_keyboard())
+    else:
+        bot.send_message(message.chat.id, "⏳ <b>Demande de révocation envoyée au Super Admin.</b>", parse_mode="HTML")
+        super_admin_id = admin_core.get_config().get('super_admin')
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("✅ Révoquer", callback_data=f"adm:revoke:{target_id}:{requester_id}"),
+            InlineKeyboardButton("❌ Annuler", callback_data=f"adm:cancel:{target_id}:{requester_id}")
+        )
+        bot.send_message(
+            super_admin_id,
+            f"⚠️ <b>DEMANDE RÉVOCATION ADMIN</b>\n\nL'admin <code>{requester_id}</code> demande la révocation de <code>{target_id}</code>.",
+            parse_mode="HTML", reply_markup=markup
+        )
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith("adm:revoke:") or call.data.startswith("adm:cancel:"))
+def handle_revoke_approval(call):
+    if not admin_core.is_super_admin(call.from_user.id): return
+    parts = call.data.split(":")
+    action, target_id, requester_id = parts[1], parts[2], parts[3]
 
-# --- LOGIQUE DE CRÉATION ZIVPN (STATE MACHINE) ---
-@bot.callback_query_handler(func=lambda call: call.data == "add_zivpn")
-def add_zivpn_start(call):
-    if not is_admin(call.from_user.id): return
-    bot.edit_message_text("⚙️ Module ZIVPN activé.", chat_id=call.message.chat.id, message_id=call.message.message_id)
-    msg = bot.send_message(call.message.chat.id, "👤 <b>Étape 1/3</b>
-Entrez le nom d'utilisateur ZIVPN :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_zivpn_user)
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
 
-def process_zivpn_user(message):
-    user = message.text
-    msg = bot.send_message(message.chat.id, "🔑 <b>Étape 2/3</b>
-Entrez le mot de passe :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_zivpn_pass, user)
-
-def process_zivpn_pass(message, user):
-    password = message.text
-    msg = bot.send_message(message.chat.id, "⏳ <b>Étape 3/3</b>
-Entrez la durée (en jours) :", parse_mode="HTML")
-    bot.register_next_step_handler(msg, process_zivpn_days, user, password)
-
-def process_zivpn_days(message, user, password):
-    days = message.text
-    if not days.isdigit():
-        bot.send_message(message.chat.id, "❌ Le nombre de jours doit être un entier.", reply_markup=main_menu_keyboard())
-        return
-
-    bot.send_message(message.chat.id, f"⚙️ Création du compte <b>{user}</b> (ZIVPN)...", parse_mode="HTML")
-    success, res = zivpn_core.create_zivpn_account(user, password, days)
-    bot.send_message(message.chat.id, res, parse_mode="HTML", reply_markup=main_menu_keyboard())
-
-# --- LISTE ZIVPN ---
-@bot.callback_query_handler(func=lambda call: call.data == "list_zivpn")
-def handle_list_zivpn(call):
-    if not is_admin(call.from_user.id): return
-    result = zivpn_core.list_zivpn_accounts()
-    markup = InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home"))
-    bot.edit_message_text(result, chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML", reply_markup=markup)
+    if action == "revoke":
+        success, res = admin_core.remove_admin(target_id)
+        bot.send_message(call.message.chat.id, f"✅ Admin <code>{target_id}</code> révoqué.", parse_mode="HTML")
+        try:
+            bot.send_message(int(requester_id), f"✅ La révocation de <code>{target_id}</code> a été effectuée.", parse_mode="HTML")
+        except Exception as e:
+            logging.warning("Could not notify requester %s: %s", requester_id, e)
+    else:
+        bot.send_message(call.message.chat.id, f"ℹ️ Révocation annulée pour <code>{target_id}</code>.", parse_mode="HTML")
 
 if __name__ == "__main__":
     bot.infinity_polling()
