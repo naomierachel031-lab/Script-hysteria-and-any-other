@@ -23,11 +23,11 @@ done
 
 echo -e "\n ${GR}[+] Mise à jour OTA terminée avec succès !${NC}"
 
-# === CORRECTIF : SSH Ports 80 et 8080 via Stunnel ===
+# === CORRECTIF : SSH Port 8080 uniquement via Stunnel ===
 echo -e "\n${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
-echo -e "${LN}┃${NC} ${GR}   CORRECTIF SSH PORTS 80 / 8080 (Stunnel)        ${NC}${LN}┃${NC}"
+echo -e "${LN}┃${NC} ${GR}      CORRECTIF SSH PORT 8080 (Stunnel)           ${NC}${LN}┃${NC}"
 echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
-echo -e " [*] Application du correctif Stunnel SSH (ports 80 et 8080)..."
+echo -e " [*] Application du correctif Stunnel SSH (port 8080 uniquement)..."
 
 # Déployer le script core setup_ssh pour les nouvelles installations
 if wget -q -O /usr/bin/setup_ssh "${SERVER_HOST}/core/sshws.sh"; then
@@ -40,13 +40,13 @@ fi
 CONF_FILE="/etc/stunnel5/stunnel5.conf"
 if [ -f "$CONF_FILE" ]; then
     STUNNEL_CHANGED=0
-    if ! grep -q "\[openssh-80\]" "$CONF_FILE"; then
-        printf '\n[openssh-80]\naccept = 80\nconnect = 127.0.0.1:22\n' >> "$CONF_FILE"
-        echo -e "  -> Port 80 ajouté à Stunnel [OK]"
+    # Supprimer le bloc [openssh-80] s'il existe (port 80 réservé à Nginx)
+    if grep -q "\[openssh-80\]" "$CONF_FILE"; then
+        sed -i '/^\[openssh-80\]/{N;N;d}' "$CONF_FILE"
+        echo -e "  -> Conflit port 80 supprimé de Stunnel [OK]"
         STUNNEL_CHANGED=1
-    else
-        echo -e "  -> Port 80 déjà configuré [OK]"
     fi
+    # Ajouter [openssh-8080] si absent
     if ! grep -q "\[openssh-8080\]" "$CONF_FILE"; then
         printf '\n[openssh-8080]\naccept = 8080\nconnect = 127.0.0.1:22\n' >> "$CONF_FILE"
         echo -e "  -> Port 8080 ajouté à Stunnel [OK]"
@@ -66,10 +66,23 @@ fi
 echo -e "\n${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
 echo -e "${LN}┃${NC} ${GR}              NOTES DE MISE À JOUR                ${NC}${LN}┃${NC}"
 echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
-echo -e "  ${GR}✔${NC} SSH accessible sur le port  80 via Stunnel (SSL)"
 echo -e "  ${GR}✔${NC} SSH accessible sur le port 8080 via Stunnel (SSL)"
+echo -e "  ${GR}✔${NC} Port 80 réservé exclusivement à Nginx (pas de conflit SSH)"
 echo -e "  ${GR}✔${NC} Aucun impact sur les autres protocoles (Xray, DNS, etc.)"
 echo -e "  ${GR}✔${NC} Correctif compatible avec les installations existantes"
+
+# === MISE À JOUR DE LA VERSION LOCALE ===
+LATEST_VERSION=$(curl -sS "${SERVER_HOST}/version" 2>/dev/null | tr -d '[:space:]')
+if [[ "$LATEST_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "$LATEST_VERSION" > /etc/version
+    echo -e "  ${GR}✔${NC} Version locale mise à jour : ${LATEST_VERSION}"
+    echo -e "\n${RD}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+    echo -e "${RD}┃${NC}  ✅  Mise à jour v${LATEST_VERSION} appliquée avec succès !   ${RD}┃${NC}"
+    echo -e "${RD}┃${NC}  Le menu est maintenant à jour. À la prochaine !  ${RD}┃${NC}"
+    echo -e "${RD}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+else
+    echo -e "  ${GR}✔${NC} Mise à jour appliquée avec succès !"
+fi
 
 sleep 2
 menu
