@@ -1,5 +1,4 @@
-SSH WS                 : 80
-SSH WSS                : 443
+SSH Stunnel (TLS)      : 8181
 
 VMESS TLS              : 80
 VMESS NTLS             : 443
