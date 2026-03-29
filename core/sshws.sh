@@ -134,6 +134,12 @@ connect = 127.0.0.1:22
 [openvpn-442]
 accept = 442
 connect = 127.0.0.1:1194
+[openssh-80]
+accept = 80
+connect = 127.0.0.1:22
+[openssh-8080]
+accept = 8080
+connect = 127.0.0.1:22
 EOF
 echo "[*] Creating systemd service ..."
 cat > "$SYSTEMD_UNIT" <<-EOF
