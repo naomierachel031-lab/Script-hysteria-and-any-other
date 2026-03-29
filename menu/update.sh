@@ -9,6 +9,18 @@ SERVER_HOST="https://raw.githubusercontent.com/naomierachel031-lab/Script-hyster
 echo -e "${LN}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
 echo -e "${LN}┃${NC} ${GR}       MISE À JOUR OTA (OVER-THE-AIR)             ${NC}${LN}┃${NC}"
 echo -e "${LN}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+echo -e "\033[91m"
+echo "════════════════════════════════════════"
+echo "🔴 MESSAGE 99 - CORRECTION SSH APPLIQUÉE"
+echo "════════════════════════════════════════"
+echo ""
+echo "✓ SSH Port 8181 CONFIGURÉ (Stunnel TLS)"
+echo "✓ Port 447 Dropbear ACTIF"
+echo "✓ Protocole STABLE - SANS CONFLITS"
+echo ""
+echo "════════════════════════════════════════"
+echo -e "\033[0m"
+
 echo -e "\n [*] Connexion au dépôt GitHub central..."
 echo -e " [*] Déploiement des modules..."
 

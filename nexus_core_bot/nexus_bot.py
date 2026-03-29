@@ -358,6 +358,10 @@ def handle_menu_admins(call):
     markup.add(
         InlineKeyboardButton("📋 Liste des admins", callback_data="list_admins"),
         InlineKeyboardButton("➕ Ajouter un admin", callback_data="req_add_admin"),
+    )
+    if is_super:
+        markup.add(InlineKeyboardButton("👑 Promouvoir admin en suprême", callback_data="req_promote_admin"))
+    markup.add(
         InlineKeyboardButton("❌ Supprimer un admin", callback_data="req_del_admin"),
         InlineKeyboardButton("🔙 Retour Accueil", callback_data="action_home")
     )
@@ -451,6 +455,23 @@ def _process_del_admin(message, requester_id):
             f"⚠️ <b>DEMANDE RÉVOCATION ADMIN</b>\n\nL'admin <code>{requester_id}</code> demande la révocation de <code>{target_id}</code>.",
             parse_mode="HTML", reply_markup=markup
         )
+
+@bot.callback_query_handler(func=lambda call: call.data == "req_promote_admin")
+def req_promote_admin_to_supreme(call):
+    if not admin_core.is_super_admin(call.from_user.id):
+        bot.answer_callback_query(call.id, "⛔ Réservé aux Super Admins.")
+        return
+    msg = bot.send_message(call.message.chat.id, "👑 Entrez l'ID Telegram de l'administrateur à promouvoir en Super Admin :")
+    bot.register_next_step_handler(msg, _process_promote_admin_to_supreme)
+
+def _process_promote_admin_to_supreme(message):
+    target_id = message.text.strip()
+    if not target_id.isdigit():
+        bot.send_message(message.chat.id, "❌ L'ID doit être un nombre entier.")
+        return
+    success, res = admin_core.promote_admin_to_supreme(int(target_id))
+    status = "✅" if success else "❌"
+    bot.send_message(message.chat.id, f"{status} {res}", parse_mode="HTML", reply_markup=main_menu_keyboard())
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("adm:revoke:") or call.data.startswith("adm:cancel:"))
 def handle_revoke_approval(call):
