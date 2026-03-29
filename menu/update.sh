@@ -71,5 +71,18 @@ echo -e "  ${GR}✔${NC} Port 80 réservé exclusivement à Nginx (pas de confli
 echo -e "  ${GR}✔${NC} Aucun impact sur les autres protocoles (Xray, DNS, etc.)"
 echo -e "  ${GR}✔${NC} Correctif compatible avec les installations existantes"
 
+# === MISE À JOUR DE LA VERSION LOCALE ===
+LATEST_VERSION=$(curl -sS "${SERVER_HOST}/version" 2>/dev/null | tr -d '[:space:]')
+if [[ "$LATEST_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "$LATEST_VERSION" > /etc/version
+    echo -e "  ${GR}✔${NC} Version locale mise à jour : ${LATEST_VERSION}"
+    echo -e "\n${RD}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+    echo -e "${RD}┃${NC}  ✅  Mise à jour v${LATEST_VERSION} appliquée avec succès !   ${RD}┃${NC}"
+    echo -e "${RD}┃${NC}  Le menu est maintenant à jour. À la prochaine !  ${RD}┃${NC}"
+    echo -e "${RD}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+else
+    echo -e "  ${GR}✔${NC} Mise à jour appliquée avec succès !"
+fi
+
 sleep 2
 menu
