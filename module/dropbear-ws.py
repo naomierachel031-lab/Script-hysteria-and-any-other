@@ -2,7 +2,7 @@
 import socket, threading, selectors, sys, time, getopt
 
 LISTENING_ADDR = '0.0.0.0'
-LISTENING_PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 7000
+LISTENING_PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8880
 PASS = ''
 BUFLEN = 4096 * 4
 TIMEOUT = 60

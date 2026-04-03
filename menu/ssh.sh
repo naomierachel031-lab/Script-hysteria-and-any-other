@@ -70,7 +70,7 @@ echo -e "${LN}●━━━━━━━━━━━━━━━━━━━━━
 echo -e "${LN}┃${NC} OpenSSH      : 22"
 echo -e "${LN}┃${NC} Dropbear     : 109, 143"
 echo -e "${LN}┃${NC} Stunnel      : 447, 777"
-echo -e "${LN}┃${NC} WS NTLS      : 80"
+echo -e "${LN}┃${NC} WS NTLS      : 80, 8880"
 echo -e "${LN}┃${NC} WS TLS       : 443"
 echo -e "${LN}┃${NC} UDPGW        : 7100–7900"
 echo -e "${LN}┃${NC} Squid        : 3128, 8080"
